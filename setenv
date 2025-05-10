@@ -1,0 +1,10 @@
+if [ ! -d Weather-api ];
+then
+        python -m venv Weather-api
+        source Weather-api/bin/activate
+        pip install -r requirements.txt
+else
+        source Weather-api/bin/activate
+        pip install -r requirements.txt
+fi
+
