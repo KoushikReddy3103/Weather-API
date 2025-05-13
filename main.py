@@ -1,28 +1,29 @@
-import requests
-import json
+import os
+from dotenv import load_dotenv
+from cache.redis_client import RedisClient
+from weather import Weather_API
 
-class Weather_API:
-    def retrieve_weather_data(self, api):
-        try:
-            response = requests.get(api)
-        except Exception as e:
-            print(f"An unexpected error occured: {e}")
-        
-        if response.status_code == 200:
-            print("Successfully fetched the data")
-            self.formatted_print(response.json())
-        else:
-            print(f"Error: {response.status_code}. Failed to fetch data.")
-            print("Response content:", response.content)
-    
-    def formatted_print(self, obj):
-        text = json.dumps(obj, sort_keys=True, indent=4)
-        print(text)
-    
-    def __init__(self, api):
-        self.retrieve_weather_data(api)
+load_dotenv()
 
 if __name__ == '__main__':
     city = "Bangalore"
-    api = f"https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{city}?unitGroup=us&key=LLLHMXFW2KK7XQ6N2ZHM3F22T&contentType=json"
-    weather_api = Weather_API(api)
+    api_key = os.environ.get("API_KEY")
+    api = f"https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{city}?unitGroup=us&key={api_key}&contentType=json"
+    # weather = Weather_API(api)
+    
+    # Instantiate the Redis Client for Redis connection
+    redis_client = RedisClient()
+    redis_client.cleanup()
+
+    weather = Weather_API(api) 
+
+    # Accessing the Cached data
+    if not redis_client.redis_client.exists(city):
+        # Fetch data from the API or another source
+        weather = Weather_API(api)     
+        # Set the data in the cache with an expiration time (in seconds)
+        redis_client.set(city, weather, ttl=43200)
+    else:
+        weather = redis_client.get(city)
+    
+    print(repr(weather))
